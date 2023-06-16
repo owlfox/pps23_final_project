@@ -2,9 +2,9 @@
 git repo for final project of parallel programming.
 
 # project proposal/presentation/report
-1. [./docs/group_22_proposal.pdf](./docs/group_22_proposal.pdf)
-2. [./docs/group_22_slide.pdf](./docs/group_22_slide.pdf)
-3. [./docs/group_22_report.pdf](./docs/group_22_report.pdf)
+1. [./group_22_proposal.pdf](./group_22_proposal.pdf)
+2. [./group_22_slide.pdf](./group_22_slide.pdf)
+3. [./group_22_report.pdf](./group_22_report.pdf)
 
 To make the documents made for the course from tex source:
 ```

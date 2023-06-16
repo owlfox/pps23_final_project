@@ -37,18 +37,21 @@
   \institution{}
   \country{Taiwan}
 }
+
+\definecolor{darkgreen}{rgb}{0.0, 0.5, 0.0} % defining the darkgreen color
+
 \lstset{
   basicstyle=\ttfamily,
   frame=single,
   breaklines=true,
   keywordstyle=\color{blue!70},
-  commentstyle=\color{green!70},
+  commentstyle=\color{darkgreen},  % <- use the newly defined color
   stringstyle=\color{red!70},
   numbers=left,
   numberstyle=\tiny,
   numbersep=5pt,
   tabsize=2,
-  literate={_}{\_}{1}  % <- add this line
+  literate={_}{\_}{1}
 }
 
 
@@ -56,52 +59,118 @@
 
 \keywords{ KLayout, DRC, Parallel Programming, Open-Source}
 
-  \begin{abstract}
-  This project explores the introduction of parallelism into KLayout Design Rule Checking (DRC) processes to enhance performance. We initially attempted to improve single DRC operation parallelism using OpenMP, but faced challenges related to c++ code base complexity and race conditions. Therefore, we transitioned to use Taskflow for task level parallelism, which provides promising performance improvements based on preliminary experiments, showcasing Taskflow's capabilities. The code and experiment scripts can be found at \href{https://github.com/owlfox/pps23_final_project}{https://github.com/owlfox/pps23\_final\_project}.
-  \end{abstract}
-  
-  \keywords{KLayout, DRC, Parallel Programming, OpenMP, Taskflow, Open-Source, Work-In-Progress T.T }
-  
-  \maketitle
-  
-  \section{Introduction}
-  The growing complexity of modern integrated circuit designs has necessitated faster DRC processes. KLayout, a GPL open source C++ layout viewer/editor/analyzer, first released in 2006-04, maintained by Matthias \textbf{K}oefferlein, has been chosen as the project to explore if classroom learned parallelism techniques can be applied in real-world C++ code base.
-  
-  \section{Proposed Solution}
-  We initially proposed introducing parallelism into KLayout's DRC scripts using OpenMP. Our exploration originally focused on the DRC code that computes derived layer shapes given two or more input layers, such as:
-  \begin{lstlisting}[language=Ruby, caption=DRC code used for benchmarking in KLayout, label=lst:sample_drc_code]
+\begin{abstract}
+  This project investigates the application of parallelism to enhance performance in KLayout's Design Rule Checking (DRC) processes. Initially, we aimed to bolster single DRC operation parallelism using OpenMP. However, complexities in the C++ code base and race conditions posed challenges. We then pivoted to Taskflow, utilizing its task-level parallelism capabilities, which demonstrated encouraging performance improvements in our preliminary experiments. The project's code and experiment scripts are available at \href{https://github.com/owlfox/pps23_final_project}{https://github.com/owlfox/pps23\_final\_project}.
+\end{abstract}
+
+\keywords{KLayout, DRC, Parallel Programming, OpenMP, Taskflow, Open-Source, Work-In-Progress}
+
+\maketitle
+
+\section{Introduction}
+With the escalating complexity of contemporary integrated circuit designs, the need for expediting DRC processes has become imperative. In light of this, we selected KLayout—a GPL open-source C++ layout viewer/editor/analyzer first released in April 2006 and maintained by Matthias \textbf{K}oefferlein—for our project. Our objective was to ascertain the feasibility of applying parallelism techniques learned in classrooms to a real-world C++ code base.
+
+\section{Proposed Solution}
+Initially, we intended to inject parallelism into KLayout's DRC scripts using OpenMP, focusing primarily on the DRC code that computes derived layer shapes from two or more input layers. For instance:
+
+\begin{lstlisting}[language=Ruby, caption=DRC code used for benchmarking in KLayout, label=lst:sample_drc_code]
 m1 = polygons(68, 20)
 via = polygons(68, 44)
 
 gate = diff.and(poly)
-  \end{lstlisting}
-    We aimed to identify the slowest part in and operation code, using real world design input, caravel.gds.gz from skywater 130nm openPDK, above and operation takes ~ 30 seconds to finish(./drc.sh to reproduce). By profiling above DRC code with perf and then visualize the callstack with flameGraph and considerable amount of time invested to trace how each ruby script code mapped into C++ coding using overrides/delegate pattern/templates. We managed to find followed C++ code section Despite the promise of this approach, we encountered challenges, and failed to ensure data safety while adding openMP pragma into followed function code, which is code segment where "and" operation spent most of the runtime:
-  
+\end{lstlisting}
+
+Our goal was to pinpoint the slowest part of the 'and' operation code, using real-world design input—caravel.gds.gz from the SkyWater 130nm openPDK. Despite the promise of this approach, we encountered challenges in ensuring data safety when adding OpenMP pragma into the C++ function in listing 2. This code segment is where the "and" operation spent most of its runtime based on our perl and FlameGraph\cite{flamegraph}  profiling result. You can run ./drc.sh to reproduce the experiment for the original benchmarking setup.
+\newline
+Consequently, we turned to Taskflow—a parallel and heterogeneous programming framework. Taskflow provided a more effective solution for parallelizing DRC scripts.
+
+\newpage
   \begin{lstlisting}[language=C++, caption=dbHierProcessor.cc,  label=code that does and DRC operation]
-template <class TS, class TI, class TR> void local_processor<TS, TI, TR>::compute_local_cell (const db::local_processor_contexts<TS, TI, TR> &contexts, db::Cell *subject_cell, const db::Cell *intruder_cell, const local_operation<TS, TI, TR> *op, const typename local_processor_cell_contexts<TS, TI, TR>::context_key_type &intruders, std::vector<std::unordered_set<TR> > &result) const {/*...*/}
+  template <class TS, class TI, class TR> void local_processor<TS, TI, TR>::compute_local_cell (const db::local_processor_contexts<TS, TI, TR> &contexts, db::Cell *subject_cell, const db::Cell *intruder_cell, const local_operation<TS, TI, TR> *op, const typename local_processor_cell_contexts<TS, TI, TR>::context_key_type &intruders, std::vector<std::unordered_set<TR> > &result) const {/*...*/}
   \end{lstlisting}
-    Also, KLayout seems to be using certain parallelism techniques like Pthreads and tiliing with scanline algorithm, which was not noticed at the project proposal stage.
+
+
+
+
+  
+    \section{Experimental Methodology}
+    Our experimental methodology involved implementing Taskflow for task-level parallelism in DRC scripts and comparing the execution times of these parallelized versions with their serial counterparts. The testbed for our experiments was a multicore system with the following specifications:
     
-    As a result, we turned to Taskflow, a parallel and heterogeneous programming framework that provides a more manageable approach to parallelizing DRC scripts. 
+    \begin{itemize}
+      \item CPU: 12th Gen Intel(R) Core(TM) i7-12700K
+      \item Memory: 32 GB DDR4 
+      \item GPU: NVIDIA GeForce RTX 3050 (Driver Version: 530.41.03, CUDA Version: 12.1)
+      \item OS: proxmox-ve 7.3-1 (running kernel: 5.15.35-1-pve)
+    \end{itemize}
+    
+    Unlike our initial approach with OpenMP, we decided to apply Taskflow to a specific digital design cell. This strategic shift allowed us to reduce the Turn-Around-Time (TAT) significantly, while simultaneously confirming the feasibility of using Taskflow. The sample DRC C++ code we used is illustrated below, with both its serial and Taskflow versions:
+    
+    \begin{lstlisting}[language=C++, caption=DRC operation using both Serial and Taskflow approaches,  label=DRC_operation_code]
+  // Serial version
+  db::Region l1 = all_m1 & all_poly;
+  db::Region l2 = all_m1 & all_diff;
+  db::Region l3 = all_poly & all_via;
+  db::Region l4 = all_m1 & all_via;
   
-  \section{Experimental Methodology}
-  Our experimental approach involved executing DRC scripts on various integrated circuit designs, measuring the execution time for different parts of the script, and identifying potential bottlenecks. We employed a multicore system to allow for parallel execution of scripts, and used diverse input sets to ensure the robustness of our solution. This rigorous methodology helped us gauge the effectiveness of our proposed solution and led us to Taskflow as the more efficient framework.
+  // TaskFlow version
+  tf::Executor executor;
+  tf::Taskflow taskflow("simple");
+  auto [A, B, C, D] = taskflow.emplace(
+    [&l1, &all_m1, &all_poly]() { l1 = all_m1 & all_poly; std::cout << "TaskA\n"; },
+    [&l2, &all_m1, &all_diff]() { l2 = all_m1 & all_diff; std::cout << "TaskB\n"; },
+    [&l3, &all_via, &all_poly]() { l3 = all_poly & all_via;  std::cout << "TaskC\n"; },
+    [&l4, &all_m1, &all_via]() { l4 = all_m1 & all_via; std::cout << "TaskD\n"; }
+  );
+  executor.run(taskflow).wait();
+    \end{lstlisting}
+    
+    The Taskflow version was run on the executor, and the tasks were scheduled and executed based on their dependencies.
   
-  \section{Experimental Results}
-  Our initial attempts at parallelization using OpenMP encountered significant difficulties. These were primarily related to side effects and code complexity which hindered the effective parallelization of the 'compute\_local\_cell' function. However, the transition to Taskflow resulted in notable performance improvements, showcasing its superiority in managing task-level parallelism. We achieved a considerable speedup in the execution of DRC scripts and observed better scalability with the number of processor cores.
   
-  \section{Related Work}
-  Past research efforts have sought to improve the performance of design rule checking in integrated circuit designs by proposing algorithmic improvements and hardware acceleration. However, these solutions have largely overlooked the potential of parallel execution. Our work, therefore, presents a significant step forward in this area by demonstrating the successful parallelization of DRC scripts using Taskflow.
+    \section{Experimental Results}
+    Our initial efforts to parallelize using OpenMP were met with considerable challenges, predominantly due to side effects and the complexity of the code base, hindering effective parallelization of the 'compute\_local\_cell' function.
   
-  \section{Conclusions}
-  Our exploration of parallel computing in KLayout's DRC processes revealed important insights. The initial challenges encountered with OpenMP underscored the importance of selecting the appropriate parallel computing tool for specific use cases. Meanwhile, our successful adoption of Taskflow provided tangible performance improvements, emphasizing its potential for managing task-level parallelism. Our work sets the stage for further research on the parallelization of integrated circuit design and testing processes.
+    In the absence of task-level parallelism, the process recorded a grand total time of 0.517 seconds (0.49 seconds user, 0.03 seconds sys). Transitioning to Taskflow led to considerable performance enhancements. The same process, when executed with Taskflow, required a grand total time of only 0.111 seconds (0.19 seconds user, 0.01 seconds sys), demonstrating Taskflow's proficiency in managing task-level parallelism.
   
-  \section{References}
-  \begin{itemize}
-    \item KLayout Documentation, "KLayout User Manual," [Online]. Available: https://www.klayout.de/doc/index.html [Accessed: 04-April-2023].
-    \item KLayout Repository, "KLayout Source Code," [Online]. Available: https://github.com/KLayout/klayout [Accessed: 04-April-2023].
-    \item Taskflow, "Taskflow: A General-purpose Parallel and Heterogeneous Task Programming System," [Online]. Available: https://taskflow.github.io/ [Accessed: 04-April-2023].
-  \end{itemize}
+    The results evidence a significant speedup in executing DRC scripts using Taskflow. Furthermore, we observed superior scalability with an increasing number of processor cores, suggesting that our parallelization strategy has the potential for greater efficiencies with increased hardware resources.
+    
+    \section{Related Work}
+    During our project, it came to light that KLayout already employs parallelism techniques, such as Pthreads and tiling with the scanline algorithm, for DRC operations. This was not realized during the initial project proposal stage.
+    
+    \section{Conclusions and Future Work}
+    Our exploration into the parallelization of KLayout's DRC processes yielded enlightening results. The challenges encountered with OpenMP underscored the critical role of selecting the right tool for parallel computing. Our subsequent adoption of TaskFlow demonstrated significant performance improvements, attesting to its potential for task-level parallelism management. However, the observed user time discrepancy between the serial and TaskFlow versions calls for a more comprehensive understanding of the underlying mechanisms.
+  
+    Future work will involve investigating the user time discrepancy between the two versions. Potential factors could include differences in thread scheduling, parallel overheads, or other aspects unique to the KLayout code base and TaskFlow. We also aim to delve further into the KLayout code base and identify additional opportunities for optimizing our parallelization strategy. Ultimately, the goal is to improve the robustness of the project and ensure consistent speed-ups across various integrated circuit designs.
+  
+    This work lays the foundation for further research on parallelizing integrated circuit design and testing processes, contributing to the ever-increasing demand for efficient design rule checking in the semiconductor industry.
+    
+    \begin{thebibliography}{9}
+      \bibitem{klayoutdoc}
+        KLayout Documentation,
+        "KLayout User Manual," [Online].
+        Available: \url{https://www.klayout.de/doc/index.html} [Accessed: 04-April-2023]
+        KLayout Repository,
+        "KLayout Source Code," [Online].
+        Available: \url{https://github.com/KLayout/klayout} [Accessed: 04-April-2023].
+        
+      \bibitem{taskflow}
+        Taskflow,
+        "Taskflow: A General-purpose Parallel and Heterogeneous Task Programming System," [Online].
+        Available: \url{https://taskflow.github.io/} [Accessed: 04-April-2023].
+    
+      \bibitem{skywater}
+        SkyWater Open Source PDK,
+        "SkyWater Open Source PDK Documentation," [Online].
+        Available: \url{https://skywater-pdk.readthedocs.io/en/main/} [Accessed: 05-June-2023].
+        
+      \bibitem{flamegraph}
+        Brendan Gregg,
+        "FlameGraph," [Online].
+        Available: \url{https://github.com/brendangregg/FlameGraph} [Accessed: 05-June-2023].
+
+    \end{thebibliography}
+
+    
   
   \end{document}
   

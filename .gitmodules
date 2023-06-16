@@ -1,0 +1,6 @@
+[submodule "klayout"]
+	path = klayout
+	url = git@github.com:owlfox/klayout.git
+[submodule "taskflow"]
+	path = taskflow
+	url = git@github.com:owlfox/taskflow.git

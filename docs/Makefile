@@ -3,7 +3,7 @@
 
 
 
-docs: group_22_slide.pdf group_22_proposal.pdf
+docs: group_22_slide.pdf group_22_proposal.pdf group_22_report.pdf
 	 
 
 group_22_slide.pdf: slide/slide.tex
@@ -17,6 +17,12 @@ group_22_proposal.pdf: proposal/proposal.tex
 	xelatex proposal.tex
 	cd -
 	ln -sf proposal/proposal.pdf $@
+
+group_22_report.pdf: report/report.tex
+	cd report
+	xelatex report.tex
+	cd -
+	ln -sf report/report.pdf $@
 
 
 clean: *.aux *.log *.out

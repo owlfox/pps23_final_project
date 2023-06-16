@@ -1,0 +1,69 @@
+\documentclass[sigconf]{acmart}
+\settopmatter{printacmref=false} 
+\renewcommand\footnotetextcopyrightpermission[1]{} 
+\pagestyle{plain} 
+
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{ulem}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\AtBeginDocument{%
+  \providecommand\BibTeX{{%
+    Bib\TeX}}}
+
+\begin{document}
+
+\title{Exploring Parallelism Opportunities in KLayout (project report, group 22)}
+
+\author{Zeren Chen}
+\affiliation{%
+  \institution{}
+  \country{Taiwan}
+}
+
+\author{MH Yan }
+\email{TBD@TBD.tw}
+\affiliation{%
+  \institution{}
+  \country{Taiwan}
+}
+
+
+\renewcommand{\shortauthors}{Zeren et al.}
+
+\keywords{ KLayout, DRC, Parallel Programming, Open-Source}
+
+
+  \begin{abstract}
+  This project explores the introduction of parallelism into KLayout's Design Rule Checking (DRC) processes to enhance performance. We initially attempted to implement parallelism using OpenMP, but faced challenges related to data safety and managing dependencies. Therefore, we transitioned to using the Taskflow framework, which better handled task-level parallelism. This shift provided significant performance improvements, showcasing Taskflow's capabilities.
+  \end{abstract}
+  
+  \keywords{KLayout, DRC, Parallel Programming, OpenMP, Taskflow, Open-Source}
+  
+  \maketitle
+  
+  \section{Introduction}
+  In recent years, the growing complexity of modern integrated circuit designs has necessitated faster Design Rule Checking (DRC) processes. KLayout, a leading software in this space, has shown potential for leveraging parallel computing for faster processing of these designs.
+  
+  \section{Proposed Solution}
+  We initially proposed introducing parallelism into KLayout's DRC scripts using OpenMP. We aimed to review the internals of DRC operation that executed in parallel, parts of C++ source where there's no data dependencies, allowed for parallel execution. Despite the promise of this approach, we encountered challenges from complexity of the C++ code base data safety and managing dependencies. As a result, we turned to Taskflow, a parallel and heterogeneous programming framework that provides a more manageable approach to parallelizing DRC scripts.
+  
+  \section{Experimental Methodology}
+  Our experimental approach involved executing DRC scripts on various integrated circuit designs, measuring the execution time for different parts of the script, and identifying potential bottlenecks. We employed a multicore system to allow for parallel execution of scripts, and used diverse input sets to ensure the robustness of our solution. This rigorous methodology helped us gauge the effectiveness of our proposed solution and led us to Taskflow as the more efficient framework.
+  
+  \section{Experimental Results}
+  Our initial attempts at parallelization using OpenMP encountered significant difficulties. However, the transition to Taskflow resulted in notable performance improvements, showcasing its superiority in managing task-level parallelism. We achieved a considerable speedup in the execution of DRC scripts and observed better scalability with the number of processor cores.
+  
+  \section{Related Work}
+
+  
+  \section{Conclusions}
+
+  
+  \section{References}
+  % Your references go here
+  
+  \end{document}
+  

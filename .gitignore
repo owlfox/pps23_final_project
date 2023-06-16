@@ -1,0 +1,7 @@
+# latex related output that I don't think is important
+*.log
+*.out
+*.snm
+*.nav
+*.toc
+*.aux

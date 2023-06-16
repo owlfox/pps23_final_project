@@ -31,11 +31,13 @@ export LD_LIBRARY_PATH="$PWD/build-release"
 ./build-release/klayout ../test_case/caravel.gds.gz
 ```
 
-# benchmark input
+# Test with original and operation benchmark input
 1. design input: `test_case/caravel.gds.gz`
 2. ruby runset of "and" operation: `test.drc`
 3. to execute it: `./drc.sh`, at my test machine
 
+# TaskFlow experiment
+1. `./tf.sh`
 
 # test host
 1. CPU: 12th Gen Intel(R) Core(TM) i7-12700K

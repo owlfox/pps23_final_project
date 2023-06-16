@@ -1,0 +1,79 @@
+#
+#  DRC  for  SKY130 according to : 
+#   https://skywater-pdk.readthedocs.io/en/latest/rules/periphery.html
+#   https://skywater-pdk.readthedocs.io/en/latest/rules/layers.html
+# 
+#   Distributed under GNU GPLv3: https://www.gnu.org/licenses/
+#
+#  History :
+#   2020-10-04 : v1.0 : initial release
+#
+##########################################################################################
+
+
+# optionnal for a batch launch :   klayout -b -rd input=my_layout.gds -rd report=sky130_drc.txt -r drc_sky130.drc
+if $input
+    source($input)
+  end
+  
+  if $report
+    report($report)
+  else
+    report("SKY130 DRC runset", File.join(File.dirname(RBA::CellView::active.filename), "sky130_drc.txt"))
+  end
+  
+  AL = true  # do not change
+  CU = false  # do not change
+  # choose betwen only one of  AL  or  CU  back-end flow here :
+  backend_flow = AL
+  
+  # enable / disable rule groups
+  FEOL    = true # front-end-of-line checks
+  BEOL    = true # back-end-of-line checks
+  OFFGRID = true # manufacturing grid/angle checks
+  
+  # klayout setup
+  ########################
+  # use a tile size of 1mm - not used in deep mode-
+  #tiles(1000.um)
+  # use a tile border of 10 micron:
+  #tile_borders(1.um)
+  #no_borders
+  # hierachical
+  # deep
+  
+  flat
+  
+  # use 4 cpu cores
+  #threads(8)
+  # if more inof is needed, set true
+  verbose(true)
+  
+  # layers definitions
+  ########################
+  
+  
+  m1 = polygons(68, 20)
+  via = polygons(68, 44)
+  m2 = polygons(69, 20)
+  via = polygons(68, 44)
+  diff = polygons(65, 20)
+  poly = polygons(66, 20)
+  #target("output.gds.gz")
+  $stdout.sync = true
+  #areaid_mt = polygons(81, 10)
+  
+  #m1.width(0.14, euclidian).output("m1.1", "m1.1 : min. m1 width : 0.14um")
+  
+  tstart = Time.now
+  gate = diff.and(poly)
+  time = Time.now
+  hours = ((time - tstart)/3600).to_i
+  minutes = ((time - tstart)/60 - hours * 60).to_i
+  seconds = ((time - tstart) - (minutes * 60 + hours * 3600)).to_i
+  puts "DRC finished at : #{time.hour}:#{time.min}:#{time.sec}  -  DRC duration =  #{hours} hrs. #{minutes} min. #{seconds} sec.\n"
+  puts  "via count= #{via.count} m1 count = #{m1.count} diff count= #{diff.count} poly count = #{poly.count} gate count = #{gate.count}\n"
+  
+  
+  
+  
